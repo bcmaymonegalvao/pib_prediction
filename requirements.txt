@@ -32,3 +32,4 @@ six==1.17.0
 virtualenv==20.31.2
 python-bcb==0.3.3
 pandas==2.2.0
+numpy>=1.26.0,<2.0.0
