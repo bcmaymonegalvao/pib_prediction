@@ -4,10 +4,12 @@ name = "pib_prediction"
 version = "0.1.0"
 description = ""
 authors = ["BRUNO GALVÃO"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = ">=3.12.7,<3.13.0"
 hydra-core = "^1.3.2"
+matplotlib = "^3.8.0" 
 
 [tool.poetry.group.dev.dependencies]
 pdoc3 = "^0.11.6"
