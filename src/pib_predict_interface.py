@@ -158,7 +158,7 @@ else:
         bars = ax2.bar(
             variacao_anual.index.year,
             variacao_anual,
-            color=['green' if x > 0 else 'red' for x in variacao_anual]
+            color=['blue' if x > 0 else 'red' for x in variacao_anual]
         )
         
         # Adiciona os valores nas barras
