@@ -94,7 +94,7 @@ if not dados.empty:
     
     # Formatação específica para cada série
     if "PIB" in indicador_selecionado:
-        dados[indicador_selecionado] = dados[indicador_selecionado] #/ 1e6  # Converte para milhões
+        dados[indicador_selecionado] = dados[indicador_selecionado]  # Converte para milhões
         unidade = "BRL" if "PIB" in indicador_selecionado else "R$"
     elif "Dívida" in indicador_selecionado:
         unidade = "% do PIB"
@@ -132,7 +132,10 @@ else:
     
     with col1:
         # Gráfico de linha original
-        st.subheader(f"Evolução do {indicador_selecionado} ({unidade})\n")
+        if indicador_selecionado == "PIB ( R$ milhões)":
+            st.subheader(f"Evolução do PIB ( trilhões R$) ({unidade})\n")
+        else:
+            st.subheader(f"Evolução do {indicador_selecionado} ({unidade})\n")
         fig1, ax1 = plt.subplots(figsize=(10, 5))
         dados[indicador_selecionado].plot(ax=ax1, label=indicador_selecionado)
         
@@ -158,7 +161,7 @@ else:
         bars = ax2.bar(
             variacao_anual.index.year,
             variacao_anual,
-            color=['cyan' if x > 0 else 'red' for x in variacao_anual]
+            color=['#6495ED' if x > 0 else 'red' for x in variacao_anual]
         )
         
         # Adiciona os valores nas barras
