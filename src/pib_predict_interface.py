@@ -23,7 +23,7 @@ def carregar_dados_bcb(codigo_serie, data_inicio, data_fim):
     return sgs.get({list(SERIES_BCB.keys())[list(SERIES_BCB.values()).index(codigo_serie)]: codigo_serie}, 
                    start=data_inicio, end=data_fim)
 @st.cache_data
-def calcular_variacao_periodica(dados, periodo='A'):
+def calcular_variacao_periodica(dados, periodo = 'A'):
     """
     Calcula a variação periódica (anual, trimestral ou mensal)
     periodo: 'A' (anual), 'Q' (trimestral), 'M' (mensal)
@@ -71,26 +71,26 @@ with st.sidebar:
     )
     periodicidade = st.sidebar.radio(
     "Periodicidade da Variação",
-    options=['Anual', 'Trimestral', 'Mensal'],
-    index=0
+    options = ['Anual', 'Trimestral', 'Mensal'],
+    index = 0
     )
     
     # Opções adicionais
-    mostrar_media_movel = st.checkbox("Mostrar média móvel (12 meses)", value=True)
-    escala_log = st.checkbox("Escala logarítmica", value=False)
+    mostrar_media_movel = st.checkbox("Mostrar média móvel (12 meses)", value = True)
+    escala_log = st.checkbox("Escala logarítmica", value = False)
 
 # Carrega os dados
 codigo_serie = SERIES_BCB[indicador_selecionado]
 dados = carregar_dados_bcb(codigo_serie, data_inicio, data_fim)
 variacao = calcular_variacao_periodica(dados[indicador_selecionado], 
-                                     periodo=periodicidade[0])
+                                     periodo = periodicidade[0])
 
 # Processamento dos dados
 if not dados.empty:
-    dados = dados.rename(columns={codigo_serie: indicador_selecionado})
+    dados = dados.rename(columns = {codigo_serie: indicador_selecionado})
     
     if mostrar_media_movel:
-        dados['Média Móvel'] = dados[indicador_selecionado].rolling(window=12).mean()
+        dados['Média Móvel'] = dados[indicador_selecionado].rolling(window = 12).mean()
     
     # Formatação específica para cada série
     if "PIB" in indicador_selecionado:
@@ -110,18 +110,21 @@ st.subheader("Estatísticas Descritivas")
 col1, col2, col3 = st.columns(3)
     
 with col1:
+    with st.container(border = True, height = 120):    
         st.metric("Valor Inicial", 
                  f"{dados[indicador_selecionado].iloc[0]:,.2f} {unidade}")
     
 with col2:
+    with st.container(border = True, height = 120):    
         st.metric("Valor Atual", 
                  f"{dados[indicador_selecionado].iloc[-1]:,.2f} {unidade}")
     
 with col3:
+    with st.container(border = True, height = 120):
         variacao = ((dados[indicador_selecionado].iloc[-1] / dados[indicador_selecionado].iloc[0] - 1) * 100)
         st.metric("Variação no Período", 
                  f"{variacao:.2f}%",
-                 delta_color="inverse" if "Dívida" in indicador_selecionado else "normal")
+                 delta_color = "inverse" if "Dívida" in indicador_selecionado else "normal")
 
 # Exibição dos dados
 if dados.empty:
@@ -129,59 +132,77 @@ if dados.empty:
 else:
     # Cria duas colunas para os gráficos
     col1, col2 = st.columns(2)
-    
     with col1:
-        # Gráfico de linha original
-        if indicador_selecionado == "PIB ( R$ milhões)":
-            st.subheader(f"Evolução do PIB ( trilhões R$) ({unidade})\n")
-        else:
-            st.subheader(f"Evolução do {indicador_selecionado} ({unidade})\n")
-        fig1, ax1 = plt.subplots(figsize=(10, 5))
-        dados[indicador_selecionado].plot(ax=ax1, label=indicador_selecionado)
+        with st.container(border = True, height = 350):
+            if indicador_selecionado == "PIB ( R$ milhões)":
+                st.subheader(f"Evolução do PIB ( trilhões R$)")  #({unidade})
+            else:
+                st.subheader(f"Evolução do {indicador_selecionado} ({unidade})\n")
+
+            fig1, ax1 = plt.subplots(figsize=(10, 5))
+
+            dados[indicador_selecionado].plot(ax = ax1, label = indicador_selecionado)
         
-        if mostrar_media_movel:
-            dados['Média Móvel'].plot(ax=ax1, linestyle='--', label='Média Móvel (12 meses)')
+            if mostrar_media_movel:
+                dados['Média Móvel'].plot(ax = ax1, linestyle = '--', label = 'Média Móvel (12 meses)')
         
-        if escala_log:
-            ax1.set_yscale('log')
+            if escala_log:
+                ax1.set_yscale('log')
         
-        ax1.set_ylabel(unidade)
-        ax1.grid(True)
-        ax1.legend()
-        st.pyplot(fig1)
-    
+            ax1.set_ylabel(unidade)
+            ax1.grid(True)
+            # ax1.legend()
+            st.pyplot(fig1)
+
     with col2:
         # Novo gráfico de barras com variação periódica
-        st.subheader(f"Variação Anual do {indicador_selecionado}")
-        
-        # Calcula a variação anual
-        variacao_anual = calcular_variacao_periodica(dados[indicador_selecionado], 'A')
-        
-        fig2, ax2 = plt.subplots(figsize=(10, 5))
-        bars = ax2.bar(
-            variacao_anual.index.year,
-            variacao_anual,
-            color=['#6495ED' if x > 0 else 'red' for x in variacao_anual]
-        )
-        
-        # Adiciona os valores nas barras
-        for bar in bars:
-            height = bar.get_height()
-            ax2.text(
-                bar.get_x() + bar.get_width()/2.,
-                height + (0.3 if height > 0 else -0.8),
-                f'{height:.1f}%',
-                ha='center',
-                va='bottom' if height > 0 else 'top',
-                color='black',
-                fontsize=8
+        # Calcula a variação periodica
+        #if periodicidade == 'Anual':
+        #periodo_selecionado = periodicidade
+        variacao_periodica = calcular_variacao_periodica(dados[indicador_selecionado], 'A')
+        #elif periodicidade == 'Trimestral':
+        #    variacao_periodica = calcular_variacao_periodica(dados[indicador_selecionado], 'Q')
+        #elif periodicidade == 'Mensal':
+        #    variacao_periodica = calcular_variacao_periodica(dados[indicador_selecionado], 'M')    
+        with st.container(border = True, height = 350):
+            st.subheader(f"Variação Anual do {indicador_selecionado}")
+            fig2, ax2 = plt.subplots(figsize=(10, 5))
+
+            #if periodicidade == 'A':
+            bars = ax2.bar(
+                variacao_periodica.index.year,
+                variacao_periodica,
+                color=['#6495ED' if x > 0 else 'red' for x in variacao_periodica]
             )
-        
-        ax2.set_xlabel("Ano")
-        ax2.set_ylabel("Variação %")
-        # ax2.grid(axis='y', linestyle='--', alpha=0.7)
-        # ax2.axhline(0, color='black', linewidth=0.8)
-        st.pyplot(fig2)
+        # elif periodicidade == 'Q':
+            #    bars = ax2.bar(
+            #        variacao_periodica.index.quarter,
+            #        variacao_periodica,
+            #        color=['#6495ED' if x > 0 else 'red' for x in variacao_periodica]
+            #    )
+            #elif periodicidade == 'M':
+            #    bars = ax2.bar(
+            #        variacao_periodica.index.month,
+            #        variacao_periodica,
+            #        color=['#6495ED' if x > 0 else 'red' for x in variacao_periodica]
+            #    )
+            # Adiciona os valores nas barras
+            for bar in bars:
+                height = bar.get_height()
+                ax2.text(
+                    bar.get_x() + bar.get_width()/2.,
+                    height + (0.3 if height > 0 else -0.8),
+                    f'{height:.1f}%',
+                    ha='center',
+                    va='bottom' if height > 0 else 'top',
+                    color='black',
+                    fontsize=8
+                )
+            ax2.set_xlabel("Ano")
+            ax2.set_ylabel("Variação %")
+            # ax2.grid(axis='y', linestyle='--', alpha=0.7)
+            # ax2.axhline(0, color='black', linewidth=0.8)
+            st.pyplot(fig2)
 
 # Dados brutos
 st.subheader("Dados Brutos")
