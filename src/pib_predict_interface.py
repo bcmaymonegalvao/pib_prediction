@@ -18,7 +18,7 @@ SERIES_BCB = {
 }
 
 # Função com cache para carregar dados
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl = 3600)
 def carregar_dados_bcb(codigo_serie, data_inicio, data_fim):
     return sgs.get({list(SERIES_BCB.keys())[list(SERIES_BCB.values()).index(codigo_serie)]: codigo_serie}, 
                    start=data_inicio, end=data_fim)
@@ -39,11 +39,12 @@ def calcular_variacao_periodica(dados, periodo = 'A'):
     return variacao.dropna()
 
 # Interface do usuário
-st.title("📈 Indicadores Econômicos do Brasil")
-st.write("""
-Visualize a evolução temporal dos principais indicadores econômicos do Brasil, 
-dados disponibilizados pelo Banco Central através do Sistema Gerenciador de Séries Temporais (SGS).
-""")
+with st.container(border = True, height = 200):
+    st.title("📈 Indicadores Econômicos do Brasil")
+    st.write("""
+    ##### Visualize a evolução temporal dos principais indicadores econômicos do Brasil, dados disponibilizados pelo Banco Central através do Sistema Gerenciador de Séries Temporais (SGS).
+    """)
+
 
 # Sidebar com controles
 with st.sidebar:
@@ -94,7 +95,7 @@ if not dados.empty:
     
     # Formatação específica para cada série
     if "PIB" in indicador_selecionado:
-        dados[indicador_selecionado] = dados[indicador_selecionado]  # Converte para milhões
+        dados[indicador_selecionado] = dados[indicador_selecionado] # Converte para milhões
         unidade = "BRL" if "PIB" in indicador_selecionado else "R$"
     elif "Dívida" in indicador_selecionado:
         unidade = "% do PIB"
@@ -106,17 +107,19 @@ if not dados.empty:
         unidade = ""
 
 # Estatísticas descritivas
-st.subheader("Estatísticas Descritivas")
+with st.container(border = True, height = 80):
+    st.subheader("Estatísticas Descritivas")
+
 col1, col2, col3 = st.columns(3)
     
 with col1:
     with st.container(border = True, height = 120):    
-        st.metric("Valor Inicial", 
+        st.metric(" Valor Inicial", 
                  f"{dados[indicador_selecionado].iloc[0]:,.2f} {unidade}")
     
 with col2:
     with st.container(border = True, height = 120):    
-        st.metric("Valor Atual", 
+        st.metric(" Valor Atual", 
                  f"{dados[indicador_selecionado].iloc[-1]:,.2f} {unidade}")
     
 with col3:
@@ -205,9 +208,10 @@ else:
             st.pyplot(fig2)
 
 # Dados brutos
-st.subheader("Dados Brutos")
-st.dataframe(dados.style.format({indicador_selecionado: "{:,.2f}"}), 
-                height=300)
+with st.container(border = True, height = 350):
+    st.subheader("Dados Brutos")
+    st.dataframe(dados.style.format({indicador_selecionado: "{:,.2f}"}), 
+                    height=300)
 
 # Rodapé
 st.markdown("---")
