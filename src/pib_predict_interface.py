@@ -262,60 +262,58 @@ else:
     # Cria duas colunas para os gráficos
     col1, col2 = st.columns(2)
     with col1:
-        with st.container(border=True):
-            if indicador_selecionado == "PIB (R$ milhões)":
-                st.subheader(f"Evolução do PIB (R$ bilhões)")
-            else:
-                st.subheader(f"Evolução do {indicador_selecionado} ({unidade})")
+        if indicador_selecionado == "PIB (R$ milhões)":
+            st.subheader(f"Evolução do PIB (R$ bilhões)")
+        else:
+            st.subheader(f"Evolução do {indicador_selecionado} ({unidade})")
 
-            fig1, ax1 = plt.subplots(figsize=(10, 5))
+        fig1, ax1 = plt.subplots(figsize=(10, 5.5))
 
-            dados[indicador_selecionado].plot(ax=ax1, label=indicador_selecionado, linewidth=2)
-        
-            if mostrar_media_movel:
-                dados['Média Móvel'].plot(ax=ax1, linestyle='--', label='Média Móvel (12 meses)', linewidth=2)
-        
-            if escala_log:
-                ax1.set_yscale('log')
-        
-            ax1.set_ylabel(unidade, fontsize=11)
-            ax1.set_xlabel('Ano', fontsize=11)
-            ax1.grid(True, alpha=0.3)
-            ax1.legend(fontsize=10)
-            plt.tight_layout()
-            st.pyplot(fig1, use_container_width=True)
+        dados[indicador_selecionado].plot(ax=ax1, label=indicador_selecionado, linewidth=2.5)
+    
+        if mostrar_media_movel:
+            dados['Média Móvel'].plot(ax=ax1, linestyle='--', label='Média Móvel (12 meses)', linewidth=2.5)
+    
+        if escala_log:
+            ax1.set_yscale('log')
+    
+        ax1.set_ylabel(unidade, fontsize=12)
+        ax1.set_xlabel('Ano', fontsize=12)
+        ax1.grid(True, alpha=0.3)
+        ax1.legend(fontsize=11)
+        plt.tight_layout()
+        st.pyplot(fig1, use_container_width=True)
 
     with col2:
         variacao_periodica = calcular_variacao_periodica(dados[indicador_selecionado], 'A')
         
-        with st.container(border=True):
-            st.subheader(f"Variação Anual do {indicador_selecionado}")
-            fig2, ax2 = plt.subplots(figsize=(10, 5))
+        st.subheader(f"Variação Anual do {indicador_selecionado}")
+        fig2, ax2 = plt.subplots(figsize=(10, 5.5))
 
-            bars = ax2.bar(
-                variacao_periodica.index.year,
-                variacao_periodica,
-                color=['#6495ED' if x > 0 else 'red' for x in variacao_periodica]
+        bars = ax2.bar(
+            variacao_periodica.index.year,
+            variacao_periodica,
+            color=['#6495ED' if x > 0 else 'red' for x in variacao_periodica]
+        )
+        
+        # Adiciona os valores nas barras
+        for bar in bars:
+            height = bar.get_height()
+            ax2.text(
+                bar.get_x() + bar.get_width()/2.,
+                height + (0.3 if height > 0 else -0.8),
+                f'{height:.1f}%',
+                ha='center',
+                va='bottom' if height > 0 else 'top',
+                color='black',
+                fontsize=9
             )
-            
-            # Adiciona os valores nas barras
-            for bar in bars:
-                height = bar.get_height()
-                ax2.text(
-                    bar.get_x() + bar.get_width()/2.,
-                    height + (0.3 if height > 0 else -0.8),
-                    f'{height:.1f}%',
-                    ha='center',
-                    va='bottom' if height > 0 else 'top',
-                    color='black',
-                    fontsize=9
-                )
-            ax2.set_xlabel("Ano", fontsize=11)
-            ax2.set_ylabel("Variação %", fontsize=11)
-            ax2.axhline(0, color='black', linewidth=0.8)
-            ax2.grid(True, alpha=0.3)
-            plt.tight_layout()
-            st.pyplot(fig2, use_container_width=True)
+        ax2.set_xlabel("Ano", fontsize=12)
+        ax2.set_ylabel("Variação %", fontsize=12)
+        ax2.axhline(0, color='black', linewidth=0.8)
+        ax2.grid(True, alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig2, use_container_width=True)
 
 # Seção de Previsão (apenas para PIB)
 if "PIB" in indicador_selecionado and fazer_previsao:
@@ -334,9 +332,9 @@ if "PIB" in indicador_selecionado and fazer_previsao:
         # Métricas do modelo com explicações
         st.subheader("📊 Qualidade do Modelo de Previsão")
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
-            st.metric("MAE", f"{metricas['MAE']:,.2f}")
+            st.metric("MAE (Erro Médio Absoluto)", f"{metricas['MAE']:,.2f}")
             with st.expander("ℹ️ O que é MAE?"):
                 st.write("""
                 **MAE (Mean Absolute Error)** - Erro Médio Absoluto
@@ -351,7 +349,7 @@ if "PIB" in indicador_selecionado and fazer_previsao:
                 """)
         
         with col2:
-            st.metric("RMSE", f"{metricas['RMSE']:,.2f}")
+            st.metric("RMSE (Raiz do Erro Quadrático)", f"{metricas['RMSE']:,.2f}")
             with st.expander("ℹ️ O que é RMSE?"):
                 st.write("""
                 **RMSE (Root Mean Squared Error)** - Raiz do Erro Quadrático Médio
@@ -365,21 +363,32 @@ if "PIB" in indicador_selecionado and fazer_previsao:
                 *Quanto mais próximo do MAE, mais consistentes são os erros.*
                 """)
         
-        with col3:
-            r2_valor = metricas['R²']
-            r2_percentual = r2_valor * 100
-            
-            # Define cor baseada na qualidade do R²
-            if r2_valor >= 0.9:
-                qualidade = "🟢 Excelente"
-            elif r2_valor >= 0.7:
-                qualidade = "🟡 Bom"
-            elif r2_valor >= 0.5:
-                qualidade = "🟠 Regular"
-            else:
-                qualidade = "🔴 Fraco"
-            
-            st.metric("R²", f"{r2_valor:.4f}", delta=qualidade)
+        # R² em uma seção separada para destaque
+        r2_valor = metricas['R²']
+        r2_percentual = r2_valor * 100
+        
+        # Define cor baseada na qualidade do R²
+        if r2_valor >= 0.9:
+            qualidade = "🟢 Excelente"
+            cor = "green"
+        elif r2_valor >= 0.7:
+            qualidade = "🟡 Bom"
+            cor = "blue"
+        elif r2_valor >= 0.5:
+            qualidade = "🟠 Regular"
+            cor = "orange"
+        else:
+            qualidade = "🔴 Fraco"
+            cor = "red"
+        
+        st.markdown("---")
+        col_r2_1, col_r2_2, col_r2_3 = st.columns([1, 2, 1])
+        with col_r2_2:
+            st.metric(
+                "R² (Coeficiente de Determinação)", 
+                f"{r2_valor:.4f}",
+                delta=f"{qualidade} - Explica {r2_percentual:.1f}% dos dados"
+            )
             with st.expander("ℹ️ O que é R²?"):
                 st.write(f"""
                 **R² (Coeficiente de Determinação)**
@@ -390,10 +399,10 @@ if "PIB" in indicador_selecionado and fazer_previsao:
                 - Seu modelo explica **{r2_percentual:.2f}%** da variação dos dados
                 
                 **Interpretação:**
-                - 0.9 a 1.0: Excelente ajuste (90-100%)
-                - 0.7 a 0.9: Bom ajuste (70-90%)
-                - 0.5 a 0.7: Regular ajuste (50-70%)
-                - < 0.5: Ajuste fraco (< 50%)
+                - 0.9 a 1.0: 🟢 Excelente ajuste (90-100%)
+                - 0.7 a 0.9: 🟡 Bom ajuste (70-90%)
+                - 0.5 a 0.7: 🟠 Regular ajuste (50-70%)
+                - < 0.5: 🔴 Ajuste fraco (< 50%)
                 
                 *Seu modelo atual: **{qualidade}***
                 """)
@@ -404,70 +413,68 @@ if "PIB" in indicador_selecionado and fazer_previsao:
         col1, col2 = st.columns(2)
         
         with col1:
-            with st.container(border=True):
-                st.subheader("Dados Históricos vs Previsão")
-                
-                fig3, ax3 = plt.subplots(figsize=(10, 5))
-                
-                # Dados históricos
-                ax3.plot(dados_historicos.index.year, 
-                        dados_historicos[indicador_selecionado], 
-                        marker='o', 
-                        label='Dados Históricos',
-                        linewidth=2.5,
-                        markersize=5,
-                        color='#2E86AB')
-                
-                # Previsões
-                ax3.plot(df_previsoes['Ano'], 
-                        df_previsoes['Previsão'], 
-                        marker='s', 
-                        label='Previsão',
-                        linewidth=2.5,
-                        markersize=5,
-                        linestyle='--',
-                        color='#A23B72')
-                
-                ax3.set_xlabel("Ano", fontsize=11)
-                ax3.set_ylabel(unidade, fontsize=11)
-                ax3.grid(True, alpha=0.3)
-                ax3.legend(fontsize=10)
-                plt.tight_layout()
-                st.pyplot(fig3, use_container_width=True)
+            st.subheader("Dados Históricos vs Previsão")
+            
+            fig3, ax3 = plt.subplots(figsize=(10, 5.5))
+            
+            # Dados históricos
+            ax3.plot(dados_historicos.index.year, 
+                    dados_historicos[indicador_selecionado], 
+                    marker='o', 
+                    label='Dados Históricos',
+                    linewidth=2.5,
+                    markersize=6,
+                    color='#2E86AB')
+            
+            # Previsões
+            ax3.plot(df_previsoes['Ano'], 
+                    df_previsoes['Previsão'], 
+                    marker='s', 
+                    label='Previsão',
+                    linewidth=2.5,
+                    markersize=6,
+                    linestyle='--',
+                    color='#A23B72')
+            
+            ax3.set_xlabel("Ano", fontsize=12)
+            ax3.set_ylabel(unidade, fontsize=12)
+            ax3.grid(True, alpha=0.3)
+            ax3.legend(fontsize=11)
+            plt.tight_layout()
+            st.pyplot(fig3, use_container_width=True)
         
         with col2:
-            with st.container(border=True):
-                st.subheader("Taxa de Crescimento Projetada")
-                
-                # Calcula taxa de crescimento anual
-                df_previsoes['Crescimento %'] = df_previsoes['Previsão'].pct_change() * 100
-                
-                fig4, ax4 = plt.subplots(figsize=(10, 5))
-                
-                bars = ax4.bar(
-                    df_previsoes['Ano'][1:],
-                    df_previsoes['Crescimento %'][1:],
-                    color=['#28a745' if x > 0 else '#dc3545' for x in df_previsoes['Crescimento %'][1:]]
+            st.subheader("Taxa de Crescimento Projetada")
+            
+            # Calcula taxa de crescimento anual
+            df_previsoes['Crescimento %'] = df_previsoes['Previsão'].pct_change() * 100
+            
+            fig4, ax4 = plt.subplots(figsize=(10, 5.5))
+            
+            bars = ax4.bar(
+                df_previsoes['Ano'][1:],
+                df_previsoes['Crescimento %'][1:],
+                color=['#28a745' if x > 0 else '#dc3545' for x in df_previsoes['Crescimento %'][1:]]
+            )
+            
+            # Adiciona valores nas barras
+            for bar in bars:
+                height = bar.get_height()
+                ax4.text(
+                    bar.get_x() + bar.get_width()/2.,
+                    height + (0.1 if height > 0 else -0.3),
+                    f'{height:.1f}%',
+                    ha='center',
+                    va='bottom' if height > 0 else 'top',
+                    fontsize=9
                 )
-                
-                # Adiciona valores nas barras
-                for bar in bars:
-                    height = bar.get_height()
-                    ax4.text(
-                        bar.get_x() + bar.get_width()/2.,
-                        height + (0.1 if height > 0 else -0.3),
-                        f'{height:.1f}%',
-                        ha='center',
-                        va='bottom' if height > 0 else 'top',
-                        fontsize=9
-                    )
-                
-                ax4.set_xlabel("Ano", fontsize=11)
-                ax4.set_ylabel("Crescimento Anual (%)", fontsize=11)
-                ax4.axhline(0, color='black', linewidth=0.8)
-                ax4.grid(True, alpha=0.3)
-                plt.tight_layout()
-                st.pyplot(fig4, use_container_width=True)
+            
+            ax4.set_xlabel("Ano", fontsize=12)
+            ax4.set_ylabel("Crescimento Anual (%)", fontsize=12)
+            ax4.axhline(0, color='black', linewidth=0.8)
+            ax4.grid(True, alpha=0.3)
+            plt.tight_layout()
+            st.pyplot(fig4, use_container_width=True)
         
         # Tabela de previsões
         with st.container(border=True):
@@ -476,13 +483,17 @@ if "PIB" in indicador_selecionado and fazer_previsao:
             # Adiciona crescimento à tabela
             df_previsoes_exibicao = df_previsoes.copy()
             df_previsoes_exibicao['Crescimento %'] = df_previsoes_exibicao['Previsão'].pct_change() * 100
-            df_previsoes_exibicao = df_previsoes_exibicao.fillna('-')
+            
+            # Formata a primeira linha separadamente
+            df_previsoes_exibicao['Crescimento %'] = df_previsoes_exibicao['Crescimento %'].apply(
+                lambda x: '-' if pd.isna(x) else f'{x:.2f}%'
+            )
+            df_previsoes_exibicao['Previsão'] = df_previsoes_exibicao['Previsão'].apply(
+                lambda x: f'{x:,.2f}'
+            )
             
             st.dataframe(
-                df_previsoes_exibicao.style.format({
-                    'Previsão': '{:,.2f}',
-                    'Crescimento %': '{:.2f}%'
-                }),
+                df_previsoes_exibicao,
                 height=300,
                 use_container_width=True
             )
