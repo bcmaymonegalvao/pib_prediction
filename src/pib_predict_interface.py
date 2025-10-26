@@ -143,6 +143,32 @@ with st.sidebar:
         options=list(SERIES_BCB.keys())
     )
     
+    # Seção de previsão no topo (apenas para PIB)
+    fazer_previsao = False
+    if "PIB" in indicador_selecionado:
+        st.markdown("---")
+        st.header("🔮 Previsão de PIB")
+        
+        modelo_previsao = st.selectbox(
+            "Modelo de Previsão",
+            options=['linear', 'polinomial', 'random_forest'],
+            format_func=lambda x: {
+                'linear': 'Regressão Linear',
+                'polinomial': 'Regressão Polinomial',
+                'random_forest': 'Random Forest'
+            }[x]
+        )
+        
+        anos_previsao = st.slider(
+            "Anos para prever",
+            min_value=1,
+            max_value=20,
+            value=10
+        )
+        
+        fazer_previsao = st.button("🚀 Gerar Previsão", type="primary", use_container_width=True)
+        st.markdown("---")
+    
     # Verifica limite de anos para o indicador selecionado
     limite_anos = LIMITES_ANOS.get(indicador_selecionado, None)
     
@@ -177,30 +203,6 @@ with st.sidebar:
     # Opções adicionais
     mostrar_media_movel = st.checkbox("Mostrar média móvel (12 meses)", value=True)
     escala_log = st.checkbox("Escala logarítmica", value=False)
-    
-    # Seção de previsão (apenas para PIB)
-    if "PIB" in indicador_selecionado:
-        st.markdown("---")
-        st.header("🔮 Previsão de PIB")
-        
-        modelo_previsao = st.selectbox(
-            "Modelo de Previsão",
-            options=['linear', 'polinomial', 'random_forest'],
-            format_func=lambda x: {
-                'linear': 'Regressão Linear',
-                'polinomial': 'Regressão Polinomial',
-                'random_forest': 'Random Forest'
-            }[x]
-        )
-        
-        anos_previsao = st.slider(
-            "Anos para prever",
-            min_value=1,
-            max_value=20,
-            value=10
-        )
-        
-        fazer_previsao = st.button("🚀 Gerar Previsão", type="primary")
 
 # Carrega os dados
 codigo_serie = SERIES_BCB[indicador_selecionado]
@@ -260,34 +262,35 @@ else:
     # Cria duas colunas para os gráficos
     col1, col2 = st.columns(2)
     with col1:
-        with st.container(border=True, height=450):
+        with st.container(border=True):
             if indicador_selecionado == "PIB (R$ milhões)":
                 st.subheader(f"Evolução do PIB (R$ bilhões)")
             else:
                 st.subheader(f"Evolução do {indicador_selecionado} ({unidade})")
 
-            fig1, ax1 = plt.subplots(figsize=(8, 4.5))
+            fig1, ax1 = plt.subplots(figsize=(10, 5))
 
-            dados[indicador_selecionado].plot(ax=ax1, label=indicador_selecionado)
+            dados[indicador_selecionado].plot(ax=ax1, label=indicador_selecionado, linewidth=2)
         
             if mostrar_media_movel:
-                dados['Média Móvel'].plot(ax=ax1, linestyle='--', label='Média Móvel (12 meses)')
+                dados['Média Móvel'].plot(ax=ax1, linestyle='--', label='Média Móvel (12 meses)', linewidth=2)
         
             if escala_log:
                 ax1.set_yscale('log')
         
-            ax1.set_ylabel(unidade)
-            ax1.grid(True)
-            ax1.legend()
+            ax1.set_ylabel(unidade, fontsize=11)
+            ax1.set_xlabel('Ano', fontsize=11)
+            ax1.grid(True, alpha=0.3)
+            ax1.legend(fontsize=10)
             plt.tight_layout()
-            st.pyplot(fig1)
+            st.pyplot(fig1, use_container_width=True)
 
     with col2:
         variacao_periodica = calcular_variacao_periodica(dados[indicador_selecionado], 'A')
         
-        with st.container(border=True, height=450):
+        with st.container(border=True):
             st.subheader(f"Variação Anual do {indicador_selecionado}")
-            fig2, ax2 = plt.subplots(figsize=(8, 4.5))
+            fig2, ax2 = plt.subplots(figsize=(10, 5))
 
             bars = ax2.bar(
                 variacao_periodica.index.year,
@@ -305,16 +308,17 @@ else:
                     ha='center',
                     va='bottom' if height > 0 else 'top',
                     color='black',
-                    fontsize=8
+                    fontsize=9
                 )
-            ax2.set_xlabel("Ano")
-            ax2.set_ylabel("Variação %")
+            ax2.set_xlabel("Ano", fontsize=11)
+            ax2.set_ylabel("Variação %", fontsize=11)
             ax2.axhline(0, color='black', linewidth=0.8)
+            ax2.grid(True, alpha=0.3)
             plt.tight_layout()
-            st.pyplot(fig2)
+            st.pyplot(fig2, use_container_width=True)
 
 # Seção de Previsão (apenas para PIB)
-if "PIB" in indicador_selecionado and 'fazer_previsao' in locals() and fazer_previsao:
+if "PIB" in indicador_selecionado and fazer_previsao:
     st.markdown("---")
     with st.container(border=True):
         st.header("🔮 Previsão do PIB para os Próximos Anos")
@@ -327,30 +331,91 @@ if "PIB" in indicador_selecionado and 'fazer_previsao' in locals() and fazer_pre
                 anos_previsao
             )
         
-        # Métricas do modelo
+        # Métricas do modelo com explicações
+        st.subheader("📊 Qualidade do Modelo de Previsão")
+        
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("MAE (Erro Médio Absoluto)", f"{metricas['MAE']:,.2f}")
+            st.metric("MAE", f"{metricas['MAE']:,.2f}")
+            with st.expander("ℹ️ O que é MAE?"):
+                st.write("""
+                **MAE (Mean Absolute Error)** - Erro Médio Absoluto
+                
+                Mede a diferença média entre os valores previstos e os valores reais.
+                
+                - **Valores menores são melhores**
+                - Representa o erro médio em unidades do PIB (bilhões de reais)
+                - Fácil de interpretar: quanto, em média, o modelo erra
+                
+                *Exemplo: MAE de 50 significa que, em média, as previsões erram por 50 bilhões.*
+                """)
+        
         with col2:
-            st.metric("RMSE (Raiz do Erro Quadrático)", f"{metricas['RMSE']:,.2f}")
+            st.metric("RMSE", f"{metricas['RMSE']:,.2f}")
+            with st.expander("ℹ️ O que é RMSE?"):
+                st.write("""
+                **RMSE (Root Mean Squared Error)** - Raiz do Erro Quadrático Médio
+                
+                Similar ao MAE, mas penaliza mais os erros grandes.
+                
+                - **Valores menores são melhores**
+                - Sempre maior ou igual ao MAE
+                - Mais sensível a valores extremos (outliers)
+                
+                *Quanto mais próximo do MAE, mais consistentes são os erros.*
+                """)
+        
         with col3:
-            st.metric("R² (Coeficiente de Determinação)", f"{metricas['R²']:.4f}")
+            r2_valor = metricas['R²']
+            r2_percentual = r2_valor * 100
+            
+            # Define cor baseada na qualidade do R²
+            if r2_valor >= 0.9:
+                qualidade = "🟢 Excelente"
+            elif r2_valor >= 0.7:
+                qualidade = "🟡 Bom"
+            elif r2_valor >= 0.5:
+                qualidade = "🟠 Regular"
+            else:
+                qualidade = "🔴 Fraco"
+            
+            st.metric("R²", f"{r2_valor:.4f}", delta=qualidade)
+            with st.expander("ℹ️ O que é R²?"):
+                st.write(f"""
+                **R² (Coeficiente de Determinação)**
+                
+                Indica quanto da variação dos dados o modelo consegue explicar.
+                
+                - **Valores de 0 a 1** (quanto mais próximo de 1, melhor)
+                - Seu modelo explica **{r2_percentual:.2f}%** da variação dos dados
+                
+                **Interpretação:**
+                - 0.9 a 1.0: Excelente ajuste (90-100%)
+                - 0.7 a 0.9: Bom ajuste (70-90%)
+                - 0.5 a 0.7: Regular ajuste (50-70%)
+                - < 0.5: Ajuste fraco (< 50%)
+                
+                *Seu modelo atual: **{qualidade}***
+                """)
+        
+        st.markdown("---")
         
         # Gráfico de previsão
         col1, col2 = st.columns(2)
         
         with col1:
-            with st.container(border=True, height=450):
+            with st.container(border=True):
                 st.subheader("Dados Históricos vs Previsão")
                 
-                fig3, ax3 = plt.subplots(figsize=(8, 4.5))
+                fig3, ax3 = plt.subplots(figsize=(10, 5))
                 
                 # Dados históricos
                 ax3.plot(dados_historicos.index.year, 
                         dados_historicos[indicador_selecionado], 
                         marker='o', 
                         label='Dados Históricos',
-                        linewidth=2,
+                        linewidth=2.5,
+                        markersize=5,
                         color='#2E86AB')
                 
                 # Previsões
@@ -358,25 +423,26 @@ if "PIB" in indicador_selecionado and 'fazer_previsao' in locals() and fazer_pre
                         df_previsoes['Previsão'], 
                         marker='s', 
                         label='Previsão',
-                        linewidth=2,
+                        linewidth=2.5,
+                        markersize=5,
                         linestyle='--',
                         color='#A23B72')
                 
-                ax3.set_xlabel("Ano")
-                ax3.set_ylabel(unidade)
+                ax3.set_xlabel("Ano", fontsize=11)
+                ax3.set_ylabel(unidade, fontsize=11)
                 ax3.grid(True, alpha=0.3)
-                ax3.legend()
+                ax3.legend(fontsize=10)
                 plt.tight_layout()
-                st.pyplot(fig3)
+                st.pyplot(fig3, use_container_width=True)
         
         with col2:
-            with st.container(border=True, height=450):
+            with st.container(border=True):
                 st.subheader("Taxa de Crescimento Projetada")
                 
                 # Calcula taxa de crescimento anual
                 df_previsoes['Crescimento %'] = df_previsoes['Previsão'].pct_change() * 100
                 
-                fig4, ax4 = plt.subplots(figsize=(8, 4.5))
+                fig4, ax4 = plt.subplots(figsize=(10, 5))
                 
                 bars = ax4.bar(
                     df_previsoes['Ano'][1:],
@@ -393,15 +459,15 @@ if "PIB" in indicador_selecionado and 'fazer_previsao' in locals() and fazer_pre
                         f'{height:.1f}%',
                         ha='center',
                         va='bottom' if height > 0 else 'top',
-                        fontsize=8
+                        fontsize=9
                     )
                 
-                ax4.set_xlabel("Ano")
-                ax4.set_ylabel("Crescimento Anual (%)")
+                ax4.set_xlabel("Ano", fontsize=11)
+                ax4.set_ylabel("Crescimento Anual (%)", fontsize=11)
                 ax4.axhline(0, color='black', linewidth=0.8)
                 ax4.grid(True, alpha=0.3)
                 plt.tight_layout()
-                st.pyplot(fig4)
+                st.pyplot(fig4, use_container_width=True)
         
         # Tabela de previsões
         with st.container(border=True):
